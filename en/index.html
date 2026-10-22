@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>月初 NewMoon · A Minimal Markdown Editor</title>
+<meta name="description" content="月初 NewMoon: the Markdown editor for the LLM era. Agent process docs, chat exports and knowledge bases are all .md — WYSIWYG editing, bidirectional links & knowledge graph, mermaid/KaTeX, encoding-aware read/write, multi-format export. Closed source, free for personal use. Windows installer and portable builds." />
+<link rel="canonical" href="https://newmoon.spark8.xyz/en/" />
+<link rel="alternate" hreflang="zh-CN" href="https://newmoon.spark8.xyz/" />
+<link rel="alternate" hreflang="en" href="https://newmoon.spark8.xyz/en/" />
+<meta property="og:title" content="月初 NewMoon · A Minimal Markdown Editor" />
+<meta property="og:description" content="A crescent moon, a new chapter. Markdown as the working language of the LLM era: backlinks & graph, mermaid/KaTeX, encoding-aware read/write, multi-format export. Free for personal use." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://newmoon.spark8.xyz/en/" />
+<meta property="og:image" content="../assets/hero-moon.webp" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='24' fill='%231a1a2e'/%3E%3Ccircle cx='64' cy='52' r='28' fill='%23f0e68c'/%3E%3Ccircle cx='76' cy='44' r='22' fill='%231a1a2e'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --ink-0:#12121f; --ink-1:#1a1a2e; --ink-2:#16213e; --ink-3:#0f1626;
+    --moon:#f0e68c; --moon-soft:#f7efad; --moon-dim:#b8ae6a;
+    --paper:#e9edf5; --paper-dim:#aab3c6; --paper-faint:#6b7488;
+    --line:rgba(240,230,140,.14); --line-soft:rgba(233,237,245,.10);
+    --glow:rgba(240,230,140,.16);
+    --radius:16px; --maxw:1120px;
+    --sans:"Inter","Segoe UI",-apple-system,"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    --serif:"Songti SC","STSong","SimSun","Noto Serif SC",Georgia,serif;
+    --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Cascadia Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--ink-0); color:var(--paper);
+    font-family:var(--sans); line-height:1.65; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit; text-decoration:none}
+  img,video{max-width:100%; display:block}
+  code{font-family:var(--mono); font-size:.92em; background:rgba(240,230,140,.09); color:var(--moon-soft); padding:1px 6px; border-radius:6px}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+  .eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.28em; text-transform:uppercase; color:var(--moon-dim)}
+
+  /* ---------- nav ---------- */
+  header.nav{
+    position:fixed; top:0; left:0; right:0; z-index:60;
+    backdrop-filter:blur(14px);
+    background:linear-gradient(180deg,rgba(18,18,31,.88),rgba(18,18,31,.5));
+    border-bottom:1px solid var(--line-soft);
+  }
+  .nav-inner{display:flex; align-items:center; justify-content:space-between; height:64px}
+  .brand{display:flex; align-items:center; gap:12px; font-weight:600; letter-spacing:.02em}
+  .brand svg{width:32px; height:32px; display:block; filter:drop-shadow(0 0 10px var(--glow))}
+  .brand b{font-size:16px}
+  .brand span{color:var(--paper-dim); font-weight:400; font-size:13px; margin-left:2px}
+  nav.links{display:flex; align-items:center; gap:26px; font-size:14.5px; color:var(--paper-dim)}
+  nav.links a:hover{color:var(--paper)}
+  .nav-cta{
+    display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:999px;
+    background:var(--moon); color:var(--ink-1); font-weight:600; font-size:14px;
+    box-shadow:0 6px 22px rgba(240,230,140,.22); transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .nav-cta:hover{transform:translateY(-1px); box-shadow:0 10px 28px rgba(240,230,140,.30)}
+  .menu-btn{display:none; background:none; border:1px solid var(--line); color:var(--paper); border-radius:10px; padding:8px 11px; font-size:16px; cursor:pointer}
+
+  /* ---------- hero: full-bleed moonlit poster ---------- */
+  .hero{
+    position:relative; min-height:100svh; display:flex; align-items:center;
+    padding:112px 0 72px; overflow:hidden;
+  }
+  .hero-bg{position:absolute; inset:0; z-index:-2}
+  .hero-bg img{width:100%; height:100%; object-fit:cover; object-position:center 62%}
+  .hero-bg::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(90deg,rgba(18,18,31,.92) 0%,rgba(18,18,31,.72) 42%,rgba(18,18,31,.18) 78%,transparent 100%),
+               linear-gradient(0deg,var(--ink-0) 0%,transparent 26%);
+  }
+  .hero-inner{width:100%}
+  .hero-copy{max-width:640px}
+  .hero .eyebrow{opacity:0; animation:rise .8s .1s ease forwards}
+  h1.title{
+    font-family:var(--serif); font-weight:600; font-size:clamp(44px,6.4vw,74px); line-height:1.08;
+    margin:18px 0 4px; letter-spacing:.01em;
+    opacity:0; animation:rise .8s .22s ease forwards;
+  }
+  h1.title .accent{color:var(--moon); text-shadow:0 0 34px rgba(240,230,140,.35)}
+  .poem{
+    font-family:var(--serif); font-size:clamp(17px,2.2vw,22px); color:var(--paper-dim);
+    margin:14px 0 0; line-height:1.9;
+    opacity:0; animation:rise .8s .34s ease forwards;
+  }
+  .lead{
+    font-size:16.5px; color:var(--paper-dim); max-width:52ch; margin:18px 0 0;
+    opacity:0; animation:rise .8s .46s ease forwards;
+  }
+  .lead b{color:var(--moon-soft); font-weight:600}
+  .cta-row{display:flex; flex-wrap:wrap; gap:14px; margin-top:34px; opacity:0; animation:rise .8s .58s ease forwards}
+  .btn{
+    display:inline-flex; align-items:center; gap:10px; padding:14px 24px; border-radius:12px;
+    font-weight:600; font-size:15.5px; cursor:pointer; border:1px solid transparent;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn-primary{background:var(--moon); color:var(--ink-1); box-shadow:0 10px 30px rgba(240,230,140,.24)}
+  .btn-primary:hover{transform:translateY(-2px); box-shadow:0 16px 38px rgba(240,230,140,.32)}
+  .btn-ghost{background:rgba(233,237,245,.05); color:var(--paper); border-color:var(--line)}
+  .btn-ghost:hover{background:rgba(233,237,245,.09); transform:translateY(-2px)}
+  .btn small{display:block; font-weight:400; font-size:11px; opacity:.72; line-height:1.2}
+  .hero-chips{
+    margin-top:26px; display:flex; gap:8px 20px; flex-wrap:wrap;
+    font-family:var(--mono); font-size:12.5px; color:var(--paper-faint);
+    opacity:0; animation:rise .8s .7s ease forwards;
+  }
+  .hero-chips b{color:var(--moon-dim); font-weight:600}
+  .scroll-cue{
+    position:absolute; left:50%; bottom:26px; transform:translateX(-50%);
+    font-family:var(--mono); font-size:11px; letter-spacing:.3em; color:var(--paper-faint);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    opacity:0; animation:rise .8s .9s ease forwards;
+  }
+  .scroll-cue::after{content:""; width:1px; height:34px; background:linear-gradient(180deg,var(--moon-dim),transparent); animation:cue 1.8s ease-in-out infinite}
+  @keyframes rise{from{opacity:0; transform:translateY(22px)} to{opacity:1; transform:none}}
+  @keyframes cue{0%,100%{transform:scaleY(.4); opacity:.4} 50%{transform:scaleY(1); opacity:1}}
+
+  /* ---------- section shell ---------- */
+  section{padding:96px 0; position:relative}
+  .sec-head{max-width:680px; margin-bottom:48px}
+  .sec-head.center{margin-left:auto; margin-right:auto; text-align:center}
+  h2.sec-title{font-family:var(--serif); font-weight:600; font-size:clamp(28px,3.6vw,40px); margin:12px 0 10px; letter-spacing:.01em}
+  .sec-sub{color:var(--paper-dim); font-size:16px; margin:0}
+  .reveal{opacity:0; transform:translateY(26px); transition:opacity .7s ease, transform .7s ease}
+  .reveal.in{opacity:1; transform:none}
+
+  /* ---------- the product itself, below the fold ---------- */
+  .proof{padding:0 0 96px}
+  .proof-frame{
+    border:1px solid var(--line-soft); border-radius:18px; overflow:hidden;
+    box-shadow:0 50px 110px rgba(0,0,0,.55), 0 0 0 1px rgba(240,230,140,.05) inset;
+    background:var(--ink-1);
+  }
+  .proof-frame img{width:100%}
+  .proof-cap{display:flex; justify-content:space-between; gap:12px; padding:14px 4px 0; font-family:var(--mono); font-size:12px; color:var(--paper-faint)}
+  .proof-cap em{font-style:normal; color:var(--moon-dim)}
+
+  /* ---------- AI-era section ---------- */
+  .ai{background:linear-gradient(180deg,var(--ink-3),var(--ink-0) 88%)}
+  .ai-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center}
+  .ai h2{margin-top:0}
+  .ai-list{list-style:none; padding:0; margin:22px 0 0; font-size:15px; color:var(--paper-dim)}
+  .ai-list li{display:flex; gap:12px; align-items:flex-start; margin:12px 0}
+  .ai-list li svg{flex:0 0 auto; width:18px; height:18px; color:var(--moon); margin-top:3px}
+  .ai-list b{color:var(--paper); font-weight:600}
+  .ai-shot{border:1px solid var(--line-soft); border-radius:18px; overflow:hidden; box-shadow:0 36px 80px rgba(0,0,0,.5)}
+  .ai-shot img{width:100%}
+
+  /* ---------- tour: alternating text and shots ---------- */
+  .hl{display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; margin:0 0 88px}
+  .hl:last-child{margin-bottom:0}
+  .hl.rev .hl-txt{order:2}
+  .hl h3{font-family:var(--serif); font-size:clamp(22px,2.5vw,28px); margin:10px 0 12px; letter-spacing:.01em}
+  .hl p{color:var(--paper-dim); font-size:15.5px; margin:0 0 16px}
+  .hl ul{list-style:none; padding:0; margin:0; font-size:14.5px; color:var(--paper-dim)}
+  .hl li{display:flex; gap:10px; align-items:flex-start; margin:9px 0}
+  .hl li svg{flex:0 0 auto; width:17px; height:17px; color:var(--moon); margin-top:3px}
+  .hl .kicker{font-family:var(--mono); font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--moon-dim)}
+  .shot{position:relative; border:1px solid var(--line-soft); border-radius:14px; overflow:hidden; background:var(--ink-1);
+    box-shadow:0 28px 64px rgba(0,0,0,.42); cursor:zoom-in; transition:transform .18s ease, border-color .18s ease}
+  .shot:hover{transform:translateY(-4px); border-color:var(--line)}
+  .shot img{width:100%; height:auto}
+  .shot .cap{position:absolute; left:0; right:0; bottom:0; padding:22px 14px 11px; font-family:var(--mono); font-size:11.5px; color:var(--paper-dim);
+    background:linear-gradient(180deg,transparent,rgba(18,18,31,.9)); display:flex; justify-content:space-between; gap:10px}
+  .shot .cap em{font-style:normal; color:var(--moon-dim)}
+
+  /* ---------- graph mood band ---------- */
+  .band{padding:0; position:relative; height:340px; overflow:hidden; display:grid; place-items:center}
+  .band img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.75}
+  .band::after{content:""; position:absolute; inset:0; background:radial-gradient(60% 90% at 50% 50%,transparent,var(--ink-0) 92%)}
+  .band-txt{position:relative; z-index:1; text-align:center; padding:0 24px}
+  .band-txt h3{font-family:var(--serif); font-size:clamp(24px,3.2vw,36px); margin:0 0 10px; text-shadow:0 2px 24px rgba(0,0,0,.7)}
+  .band-txt p{color:var(--paper-dim); margin:0 auto; max-width:56ch; font-size:15.5px; text-shadow:0 1px 14px rgba(0,0,0,.8)}
+
+  /* ---------- features: hairline grid (no cards) ---------- */
+  .feat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:1px solid var(--line-soft)}
+  .feat{padding:30px; border-bottom:1px solid var(--line-soft); position:relative}
+  .feat + .feat{border-left:1px solid var(--line-soft); padding-left:30px}
+  .feat .ico{height:32px; color:var(--moon); margin-bottom:14px; display:block}
+  .feat .ico svg{height:100%; width:auto; display:block}
+  .feat h3{font-size:16.5px; margin:0 0 8px; font-weight:600}
+  .feat p{font-size:14px; color:var(--paper-dim); margin:0}
+
+  /* ---------- screenshot gallery ---------- */
+  .gal{display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+  .gal .shot{border-radius:12px}
+  .gal .shot .cap{font-size:10.5px; padding:18px 10px 8px}
+
+  /* ---------- capability table ---------- */
+  .table-wrap{overflow-x:auto; border:1px solid var(--line-soft); border-radius:var(--radius)}
+  table{width:100%; border-collapse:collapse; min-width:680px; font-size:14.5px}
+  th,td{padding:14px 18px; text-align:left; border-bottom:1px solid var(--line-soft)}
+  th{font-family:var(--mono); font-size:12.5px; letter-spacing:.08em; color:var(--moon-dim); text-transform:uppercase; background:rgba(0,0,0,.2)}
+  tr:last-child td{border-bottom:none}
+  td b{color:var(--moon-soft); font-weight:600}
+  td .sub{display:block; color:var(--paper-faint); font-size:12.5px; margin-top:2px}
+
+  /* ---------- download ---------- */
+  .dl-grid{display:grid; grid-template-columns:1fr 1fr; gap:22px; max-width:880px; margin:0 auto}
+  .dl{border:1px solid var(--line-soft); border-radius:var(--radius); padding:30px 28px; background:linear-gradient(180deg,rgba(26,26,46,.6),rgba(22,33,62,.3)); transition:border-color .18s ease, transform .18s ease}
+  .dl:hover{border-color:var(--line); transform:translateY(-3px)}
+  .dl.primary{border-color:rgba(240,230,140,.34)}
+  .dl h3{font-family:var(--serif); font-size:20px; margin:0 0 4px}
+  .dl .tag{font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--moon-dim); text-transform:uppercase}
+  .dl p{color:var(--paper-dim); font-size:14px; margin:10px 0 18px}
+  .dl .btn{width:100%; justify-content:center}
+  .dl-meta{font-family:var(--mono); font-size:12px; color:var(--paper-faint); margin:14px 0 0; line-height:1.8}
+  .dl-note{max-width:880px; margin:22px auto 0; font-size:13.5px; color:var(--paper-faint); line-height:1.9; text-align:center}
+  .dl-note a{color:var(--moon-dim); border-bottom:1px dashed var(--line)}
+  .lic-band{max-width:880px; margin:34px auto 0; padding:18px 24px; border:1px solid var(--line-soft); border-radius:var(--radius);
+    display:flex; flex-wrap:wrap; gap:10px 28px; justify-content:center; font-family:var(--mono); font-size:12.5px; color:var(--paper-dim)}
+  .lic-band b{color:var(--moon-dim); font-weight:600}
+
+  /* ---------- video ---------- */
+  .video-wrap{max-width:820px; margin:0 auto; border:1px solid var(--line-soft); border-radius:var(--radius); overflow:hidden; background:#000;
+    box-shadow:0 40px 90px rgba(0,0,0,.5)}
+  .video-wrap video{width:100%; display:block}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--line-soft); padding:34px 0 46px; color:var(--paper-faint); font-size:13.5px}
+  .foot{display:flex; justify-content:space-between; gap:16px 20px; flex-wrap:wrap; align-items:center}
+  .foot .brand b{font-size:15px}
+  .foot-links{display:flex; flex-wrap:wrap; gap:8px 26px; font-family:var(--mono); font-size:12.5px}
+  .foot-links a:hover{color:var(--moon-dim)}
+  .foot-note{width:100%; margin-top:18px; padding-top:16px; border-top:1px dashed var(--line-soft); font-size:12.5px; line-height:1.9}
+  .foot-note a{color:var(--moon-dim)}
+
+  /* ---------- lightbox ---------- */
+  .lightbox{position:fixed; inset:0; z-index:100; background:rgba(10,10,18,.92); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:4vh 4vw; cursor:zoom-out}
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:100%; max-height:92vh; border-radius:10px; box-shadow:0 30px 90px rgba(0,0,0,.7)}
+  .lb-btn{position:absolute; top:50%; transform:translateY(-50%); width:46px; height:46px; border-radius:50%; border:1px solid var(--line); background:rgba(26,26,46,.7); color:var(--paper); font-size:20px; cursor:pointer; display:grid; place-items:center}
+  .lb-prev{left:18px} .lb-next{right:18px}
+  .lb-close{position:absolute; top:18px; right:18px; width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:rgba(26,26,46,.7); color:var(--paper); font-size:16px; cursor:pointer}
+  .lb-count{position:absolute; bottom:18px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:12px; color:var(--paper-faint)}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:980px){
+    .hero{min-height:auto; padding:130px 0 90px}
+    .ai-grid{grid-template-columns:1fr; gap:34px}
+    .hl{grid-template-columns:1fr; gap:26px; margin-bottom:64px}
+    .hl.rev .hl-txt{order:0}
+    .feat-grid{grid-template-columns:1fr 1fr}
+    .feat + .feat{border-left:none}
+    .feat{border-right:1px solid var(--line-soft); padding-right:24px}
+    .gal{grid-template-columns:repeat(2,1fr)}
+    .dl-grid{grid-template-columns:1fr}
+    .band{height:280px}
+  }
+  @media (max-width:560px){
+    nav.links{display:none}
+    .menu-btn{display:inline-flex}
+    nav.links.open{display:flex; position:absolute; top:64px; left:0; right:0; flex-direction:column; gap:0; padding:8px 0 14px;
+      background:rgba(18,18,31,.97); border-bottom:1px solid var(--line-soft)}
+    nav.links.open a{padding:11px 24px; width:100%}
+    nav.links.open .nav-cta{margin:8px 24px 0; justify-content:center}
+    .feat-grid{grid-template-columns:1fr}
+    .feat{border-right:none; padding-right:0}
+    .foot{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ nav ============ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="月初 NewMoon home">
+      <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="24" fill="#1a1a2e"/><circle cx="64" cy="52" r="28" fill="#f0e68c"/><circle cx="76" cy="44" r="22" fill="#1a1a2e"/><rect x="30" y="92" width="68" height="6" rx="3" fill="#f0e68c" opacity=".55"/><rect x="30" y="104" width="46" height="6" rx="3" fill="#f0e68c" opacity=".3"/></svg>
+      <b>月初<span>NewMoon</span></b>
+    </a>
+    <button class="menu-btn" id="btn-menu" aria-label="Open menu" aria-expanded="false">☰</button>
+    <nav class="links" id="nav-links">
+      <a href="#tour">Features</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#compare">Capabilities</a>
+      <a href="https://github.com/bianqiang-ui/newmoon" target="_blank" rel="noopener">GitHub</a>
+      <a href="/" aria-label="Switch to the Chinese page">中文</a>
+      <a class="nav-cta" href="#download">Free Download</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ hero ============ -->
+<div class="hero" id="top">
+  <div class="hero-bg"><img src="../assets/hero-moon.webp" alt="A golden crescent moon above a sea of clouds and distant ridges, set in an ink-blue night sky" /></div>
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <div class="eyebrow">NewMoon · Windows Markdown Editor</div>
+      <h1 class="title">月初<span class="accent">,</span> A New Chapter in Every Stroke</h1>
+      <p class="poem">一弯新月，一页新章。<br/>A crescent moon, a new chapter.<br/>极简 Markdown，落笔即入画。<br/>Minimal Markdown — every stroke becomes a painting.</p>
+      <p class="lead"><b>Markdown is the working language of the LLM era.</b> Agent process docs, chat exports, knowledge bases, RAG corpora — NewMoon catches them all: WYSIWYG editing, bidirectional links and a knowledge graph, encoding-aware read/write, and multi-format export.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#download">Free Download for Windows<small>Portable · Installer · Free for personal use</small></a>
+        <a class="btn btn-ghost" href="#tour">See What It Does</a>
+      </div>
+      <div class="hero-chips">
+        <span>Version <b>v1.0.9</b></span>
+        <span>Windows <b>10 / 11 · x64</b></span>
+        <span>Closed source · <b>free for personal use</b> · commercial license required</span>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-cue">SCROLL</div>
+</div>
+
+<!-- ============ product proof ============ -->
+<div class="proof">
+  <div class="wrap reveal">
+    <div class="proof-frame"><img src="../assets/editor-top-light.webp" alt="NewMoon main window: file tree on the left, WYSIWYG document in the center, backlinks panel on the right" /></div>
+    <div class="proof-cap"><span>Main window · Light theme</span><em>Vault left, links right, one sheet of paper between</em></div>
+  </div>
+</div>
+
+<!-- ============ AI era ============ -->
+<section class="ai" id="ai">
+  <div class="wrap ai-grid">
+    <div class="reveal">
+      <div class="eyebrow">For the LLM Era</div>
+      <h2 class="sec-title">Every day with your Agent,<br/>written in .md</h2>
+      <ul class="ai-list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><span><b>Process docs</b> — AGENTS.md, plans, retrospectives, dev-logs: open and edit, save and stay conformant.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><span><b>Chat exports</b> — Markdown reports straight from the model: proofread, annotate and redistribute, WYSIWYG.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><span><b>Knowledge bases / RAG corpora</b> — treat a whole folder as one vault; bidirectional links string the fragments into a web.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><span><b>Encodings that never clash</b> — AI toolchains write UTF-8, legacy systems store GBK; NewMoon detects the encoding and writes back in kind, so CJK text never garbles.</span></li>
+      </ul>
+    </div>
+    <div class="ai-shot reveal"><img src="../assets/ai-desk.webp" alt="A late-night desk: NewMoon open on a laptop, a crescent moon outside the window" /></div>
+  </div>
+</section>
+
+<!-- ============ tour ============ -->
+<section id="tour">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Capabilities</div>
+      <h2 class="sec-title">A Markdown editor, honed into a fine tool</h2>
+      <p class="sec-sub">From first keystroke to final draft: writing, organizing, computing, presenting, exporting — five stages, each polished.</p>
+    </div>
+
+    <div class="hl reveal">
+      <div class="hl-txt">
+        <div class="kicker">Writing</div>
+        <h3>What you type is what you see</h3>
+        <p>Real-time rendering on Tiptap / ProseMirror: type Markdown syntax and the characters turn into formatting on the spot. Flip back to source mode anytime — plain text is always your safety net.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Headings, lists, quotes, task lists, tables, code blocks, highlight, sub &amp; superscript</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Smart punctuation and CJK typographic detail — every line reads publication-ready</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Autosave plus conflict alerts: lose power, not your draft</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="../assets/split-mode.webp" data-caption="Split mode · rendered view beside source"><img src="../assets/split-mode.webp" alt="NewMoon split-mode interface" loading="lazy" /><span class="cap"><em>Split mode</em><span>Click to enlarge</span></span></div>
+    </div>
+
+    <div class="hl rev reveal">
+      <div class="hl-txt">
+        <div class="kicker">Organizing</div>
+        <h3>Bidirectional links &amp; a knowledge graph</h3>
+        <p>One folder is one vault. [[Wikilinks]] weave your notes into a web: a backlinks panel, hover previews and a force-directed graph — knowledge stops being a scatter of islands.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Full-vault search, file tree, recent-vault session restore</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Backlinks and unlinked mentions: every sentence keeps its trail</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Graph view: nodes are notes, edges are links</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="../assets/graph.webp" data-caption="Knowledge graph · Light"><img src="../assets/graph.webp" alt="NewMoon knowledge graph interface" loading="lazy" /><span class="cap"><em>Knowledge graph</em><span>Click to enlarge</span></span></div>
+    </div>
+
+    <div class="hl reveal">
+      <div class="hl-txt">
+        <div class="kicker">Computing</div>
+        <h3>Diagrams and formulas, built in</h3>
+        <p>mermaid flowcharts, sequence and Gantt diagrams plus KaTeX math render natively — double-click to zoom in. Pipe syntax typed straight into tables keeps data wrangling inside the editor.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>mermaid renders offline; exports carry the diagrams too</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>KaTeX inline / block math, embedded fonts, fully offline</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Footnotes, table of contents, task lists — the skeleton of a long document, built in one pass</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="../assets/mermaid-zoom.webp" data-caption="mermaid diagram zoomed"><img src="../assets/mermaid-zoom.webp" alt="NewMoon zoomed mermaid diagram interface" loading="lazy" /><span class="cap"><em>Diagram zoom</em><span>Click to enlarge</span></span></div>
+    </div>
+
+    <div class="hl rev reveal">
+      <div class="hl-txt">
+        <div class="kicker">Encoding</div>
+        <h3>Encoding-aware, CJK-friendly</h3>
+        <p>Detects UTF-8 / GBK / GB18030 / Big5 / Shift-JIS and other common encodings automatically, then writes back losslessly in the original one. Line endings, BOMs and stray bytes are all handled — mix legacy systems, old documents and AI toolchains freely, and nothing ever garbles.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>The status bar shows the current file's encoding and line-ending style, live</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>One-click convert and save-as: open legacy archives with confidence</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="../assets/editor-top-dark.webp" data-caption="Dark theme · encoding in the status bar"><img src="../assets/editor-top-dark.webp" alt="NewMoon dark-theme interface" loading="lazy" /><span class="cap"><em>Dark theme</em><span>Click to enlarge</span></span></div>
+    </div>
+
+    <div class="hl reveal">
+      <div class="hl-txt">
+        <div class="kicker">Publishing</div>
+        <h3>One draft, published everywhere</h3>
+        <p>Export to HTML / PDF / images / print with WYSIWYG pagination and layout. Pasted images land automatically inside the vault, so documents move without broken links. Clip the web and good articles arrive as notes.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>PDF / print: tables split row by row, long documents paginate cleanly</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>HTML exports read offline — formulas and diagrams travel with the document</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Browser clipper extension (experimental): one click turns a web page into a .md note</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="../assets/page-view.webp" data-caption="Page view · print WYSIWYG"><img src="../assets/page-view.webp" alt="NewMoon page-view interface" loading="lazy" /><span class="cap"><em>Page view</em><span>Click to enlarge</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ graph band ============ -->
+<div class="band reveal">
+  <img src="../assets/graph-moon.webp" alt="A star-map of knowledge: connected nodes in gold and pale blue" loading="lazy" />
+  <div class="band-txt">
+    <h3>Let your notes weave into one web</h3>
+    <p>Bidirectional links, a backlinks panel, hover previews and a knowledge graph — NewMoon strings your scattered .md files into a second brain.</p>
+  </div>
+</div>
+
+<!-- ============ feature grid ============ -->
+<section id="features" style="padding-top:72px">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">And then</div>
+      <h2 class="sec-title">True craft lives in the details</h2>
+    </div>
+    <div class="feat-grid reveal">
+      <div class="feat"><span class="ico"><svg viewBox="4 2 16 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 4v10l-7 4-7-4V7z"/><path d="M12 3v18M5 7l14 10M19 7L5 17"/></svg></span><h3>Knowledge graph</h3><p>Force-directed layout: nodes are notes, edges are links — your knowledge map at a glance.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 3 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 4a6 6 0 1 0 0 12 6 6 0 0 0 6-6"/><path d="M10 4v12"/><path d="M16 16l5 5"/></svg></span><h3>Full-vault search</h3><p>Search a whole folder as one library: hits highlighted, context previewed, located in milliseconds.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 5 18 15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg></span><h3>Smart typography</h3><p>Punctuation normalized and widths converted automatically — every line meets publication standards.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 3 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 14L4 19M15 9l5-4"/><rect x="9" y="4" width="11" height="11" rx="2"/><rect x="4" y="9" width="11" height="11" rx="2"/></svg></span><h3>Bidirectional links</h3><p>[[Links]] weave a web; backlinks and hover previews give every sentence a provenance.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 2 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12M8 11l4 4 4-4M4 19h16"/></svg></span><h3>Autosave</h3><p>Silent write-back every 2 seconds, external-edit conflict alerts, crash-session restore — power cuts lose nothing.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="2 4 20 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v14"/></svg></span><h3>Multi-tab editing</h3><p>Browser-style tabs with cross-tab find &amp; replace — split long drafts without losing your way.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="2 2 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></span><h3>Focus &amp; preview</h3><p>Outline sidebar, typewriter mode, word count — give attention back to the words.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="2 3 20 18" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 18l6-5 4 3 3-2 5 4"/></svg></span><h3>Image workflow</h3><p>Pasting drops the file into the vault's assets folder; relative references mean moving a document never breaks a link.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 2 18 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2M7 17h10M12 17v4"/><rect x="4" y="7" width="16" height="10" rx="2"/></svg></span><h3>Print &amp; PDF</h3><p>WYSIWYG paginated export; tables break row by row, never mid-row — submission-ready.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 6 18 15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 16l5-9 4 6 3-4 4 7z"/><path d="M4 20h16"/></svg></span><h3>mermaid + KaTeX</h3><p>Flowcharts, sequence diagrams and math rendered natively — offline-capable, and they travel with exports.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="1 4 22 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 14h12"/></svg></span><h3>Encoding-aware</h3><p>GBK / Big5 / Shift-JIS detected and written back in place — CJK text never garbles.</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 2 18 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></span><h3>Web clipper</h3><p>A browser extension that saves article text as Markdown straight into your vault (experimental).</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ gallery ============ -->
+<section id="gallery">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Gallery</div>
+      <h2 class="sec-title">The moon has phases; paper has shades</h2>
+      <p class="sec-sub">Light as paper, dark as ink, sepia as a well-loved old book — three themes one click apart, or follow system. Click any screenshot to enlarge; arrow keys page through.</p>
+    </div>
+    <div class="gal reveal">
+      <div class="shot" data-full="../assets/split-mode.webp" data-caption="Split mode · rendered & source"><img src="../assets/split-mode.webp" alt="Split mode screenshot" loading="lazy" /><span class="cap"><em>Split mode</em><span>Render + source</span></span></div>
+      <div class="shot" data-full="../assets/source-mode.webp" data-caption="Source mode"><img src="../assets/source-mode.webp" alt="Source mode screenshot" loading="lazy" /><span class="cap"><em>Source mode</em><span>Plain-text safety net</span></span></div>
+      <div class="shot" data-full="../assets/graph.webp" data-caption="Knowledge graph"><img src="../assets/graph.webp" alt="Knowledge graph screenshot" loading="lazy" /><span class="cap"><em>Knowledge graph</em><span>Nodes &amp; edges</span></span></div>
+      <div class="shot" data-full="../assets/backlinks.webp" data-caption="Backlinks"><img src="../assets/backlinks.webp" alt="Backlinks screenshot" loading="lazy" /><span class="cap"><em>Backlinks</em><span>Every trail leads home</span></span></div>
+      <div class="shot" data-full="../assets/mermaid-zoom.webp" data-caption="mermaid zoom"><img src="../assets/mermaid-zoom.webp" alt="Zoomed mermaid diagram screenshot" loading="lazy" /><span class="cap"><em>mermaid</em><span>Double-click to zoom</span></span></div>
+      <div class="shot" data-full="../assets/editor-formula.webp" data-caption="KaTeX formulas"><img src="../assets/editor-formula.webp" alt="Formula editing screenshot" loading="lazy" /><span class="cap"><em>Formulas</em><span>KaTeX</span></span></div>
+      <div class="shot" data-full="../assets/editor-table.webp" data-caption="Table editing"><img src="../assets/editor-table.webp" alt="Table editing screenshot" loading="lazy" /><span class="cap"><em>Tables</em><span>Pipe syntax</span></span></div>
+      <div class="shot" data-full="../assets/editor-image.webp" data-caption="Image workflow"><img src="../assets/editor-image.webp" alt="Image workflow screenshot" loading="lazy" /><span class="cap"><em>Images</em><span>Paste to disk</span></span></div>
+      <div class="shot" data-full="../assets/page-view.webp" data-caption="Page view"><img src="../assets/page-view.webp" alt="Page view screenshot" loading="lazy" /><span class="cap"><em>Pagination</em><span>Print WYSIWYG</span></span></div>
+      <div class="shot" data-full="../assets/palette.webp" data-caption="Command palette"><img src="../assets/palette.webp" alt="Command palette screenshot" loading="lazy" /><span class="cap"><em>Palette</em><span>Ctrl+P</span></span></div>
+      <div class="shot" data-full="../assets/editor-top-dark.webp" data-caption="Main window · Dark"><img src="../assets/editor-top-dark.webp" alt="Dark theme main window screenshot" loading="lazy" /><span class="cap"><em>Dark theme</em><span>Like ink</span></span></div>
+      <div class="shot" data-full="../assets/welcome-dark.webp" data-caption="Welcome screen · Dark"><img src="../assets/welcome-dark.webp" alt="Welcome screen dark screenshot" loading="lazy" /><span class="cap"><em>Welcome</em><span>Recent vaults</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 30-second video ============ -->
+<section style="padding-top:40px">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <div class="eyebrow">In 30 Seconds</div>
+      <h2 class="sec-title">See it once, use it at once</h2>
+    </div>
+    <div class="video-wrap reveal">
+      <video src="../assets/newmoon-intro.mp4" controls muted loop playsinline preload="metadata"></video>
+    </div>
+  </div>
+</section>
+
+<!-- ============ capability table ============ -->
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Full List</div>
+      <h2 class="sec-title">Full capability list</h2>
+      <p class="sec-sub">Everything the current version (v1.0.9) does straight out of the box.</p>
+    </div>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th style="width:26%">Capability</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>WYSIWYG editing</b></td><td>Type and it renders; flip back to source mode anytime — headings / lists / tasks / tables / code blocks / highlight / sub &amp; superscript</td></tr>
+          <tr><td><b>Bidirectional links</b><span class="sub">[[wikilink]]</span></td><td>Links woven into a graph, backlinks panel, hover previews, unlinked-mention hints</td></tr>
+          <tr><td><b>Knowledge graph</b></td><td>Force-directed layout: nodes are notes, edges are links</td></tr>
+          <tr><td><b>Vault management</b></td><td>A whole folder as one library: file tree, full-text search, recent vaults, session restore</td></tr>
+          <tr><td><b>mermaid diagrams</b></td><td>Flowcharts / sequence / Gantt rendered offline, double-click to zoom</td></tr>
+          <tr><td><b>KaTeX formulas</b></td><td>Inline and block math, embedded fonts, fully offline</td></tr>
+          <tr><td><b>Enhanced tables</b></td><td>Pipe syntax typed straight into cells, in-cell editing, copy as Markdown</td></tr>
+          <tr><td><b>Footnotes / TOC</b></td><td>The long-form essentials, with one-click jumps from the outline panel</td></tr>
+          <tr><td><b>Encoding-aware read/write</b></td><td>UTF-8 / GBK / GB18030 / Big5 / Shift-JIS detected automatically, written back losslessly in the original encoding</td></tr>
+          <tr><td><b>Image workflow</b></td><td>Pasted images auto-save into the vault, relative references, double-click to zoom</td></tr>
+          <tr><td><b>Export &amp; print</b></td><td>HTML / PDF / images / paginated print — diagrams and formulas travel with the document</td></tr>
+          <tr><td><b>Web clipper</b><span class="sub">Experimental</span></td><td>A browser extension that saves article text as Markdown into your vault</td></tr>
+          <tr><td><b>Autosave</b></td><td>Silent write-back every 2 seconds, external-change conflict alerts, crash-session restore</td></tr>
+          <tr><td><b>Multi-tab</b></td><td>Browser-style tabs with cross-tab find &amp; replace</td></tr>
+          <tr><td><b>Three themes</b></td><td>Light / Dark / Sepia (eye-comfort), one-click switching, follow system</td></tr>
+          <tr><td><b>Focused writing</b></td><td>Typewriter mode, word count, shortcuts panel</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ download ============ -->
+<section id="download" style="background:linear-gradient(180deg,var(--ink-0),var(--ink-2))">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <div class="eyebrow">Download</div>
+      <h2 class="sec-title">Start writing tonight</h2>
+      <p class="sec-sub">Two channels, one installer. GitHub Releases is primary; this site's <code>/dl/</code> is the mirror.</p>
+    </div>
+    <div class="dl-grid reveal">
+      <div class="dl primary">
+        <div class="tag">Installer · MSI</div>
+        <h3>Installer</h3>
+        <p>Guided setup: choose the install folder, register the .md file association (make NewMoon your default Markdown editor), with Start Menu and desktop shortcuts.</p>
+        <a class="btn btn-primary" href="https://github.com/bianqiang-ui/newmoon/releases/latest/download/NewMoon-1.0.9.msi">Download MSI from GitHub (primary)</a>
+        <a class="btn btn-ghost" href="https://newmoon.spark8.xyz/dl/NewMoon-1.0.9.msi" style="margin-top:10px">Backup MSI from this site</a>
+        <p class="dl-meta">NewMoon-1.0.9.msi · ~130 MB · Windows 10/11 x64</p>
+      </div>
+      <div class="dl">
+        <div class="tag">Portable · ZIP</div>
+        <h3>Portable</h3>
+        <p>Unzip and run — no registry writes, no traces, take it along on a USB stick. Identical features to the installer.</p>
+        <a class="btn btn-primary" href="https://github.com/bianqiang-ui/newmoon/releases/latest/download/NewMoon-1.0.9-win.zip">Download ZIP from GitHub (primary)</a>
+        <a class="btn btn-ghost" href="https://newmoon.spark8.xyz/dl/NewMoon-1.0.9-win.zip" style="margin-top:10px">Backup ZIP from this site</a>
+        <p class="dl-meta">NewMoon-1.0.9-win.zip · ~160 MB · run NewMoon.exe after unzipping</p>
+      </div>
+    </div>
+    <p class="dl-note reveal" id="download-note">
+      Primary channel <a href="https://github.com/bianqiang-ui/newmoon/releases" target="_blank" rel="noopener">GitHub Releases</a>,
+      backup <a href="https://newmoon.spark8.xyz/dl/">site /dl/</a> — the two mirror each other.
+      The app is unsigned; if Windows SmartScreen warns on first launch, click "Run anyway".
+    </p>
+    <div class="lic-band reveal">
+      <span>License: <b>Closed source</b></span>
+      <span><b>Free for personal use</b> (no feature limits)</span>
+      <span>Commercial use requires a <b>paid license</b> (inquiries: <a href="mailto:997383@qq.com" style="color:var(--moon-dim)">997383@qq.com</a>)</span>
+      <span>Version <b>v1.0.9</b> · Windows 10/11 x64</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ footer ============ -->
+<footer>
+  <div class="wrap foot">
+    <div class="brand">
+      <svg viewBox="0 0 128 128" width="30" height="30" aria-hidden="true"><rect width="128" height="128" rx="24" fill="#1a1a2e"/><circle cx="64" cy="52" r="28" fill="#f0e68c"/><circle cx="76" cy="44" r="22" fill="#1a1a2e"/></svg>
+      <b>月初<span style="color:var(--paper-dim); font-weight:400; font-size:13px; margin-left:6px">NewMoon</span></b>
+    </div>
+    <div class="foot-links">
+      <a href="https://newmoon.spark8.xyz/">Site · newmoon.spark8.xyz</a>
+      <a href="https://github.com/bianqiang-ui/newmoon" target="_blank" rel="noopener">GitHub · bianqiang-ui/newmoon</a>
+      <a href="https://newmoon.spark8.xyz/dl/">Download mirror · /dl/</a>
+    </div>
+    <div class="foot-note">
+      © 2026 月初 NewMoon · A crescent moon, a new chapter.<br/>
+      The source code is closed; the app is free for personal use, commercial use requires a paid license.<br/>
+      Contact / commercial licensing: Tel <a href="tel:13898886628">13898886628</a> · Email <a href="mailto:997383@qq.com">997383@qq.com</a> (Bian Chengxu)
+    </div>
+  </div>
+</footer>
+
+<!-- lightbox -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot preview">
+  <button class="lb-close" id="lb-close" aria-label="Close">✕</button>
+  <button class="lb-btn lb-prev" id="lb-prev" aria-label="Previous">‹</button>
+  <img id="lb-img" src="" alt="Enlarged interface screenshot" />
+  <button class="lb-btn lb-next" id="lb-next" aria-label="Next">›</button>
+  <div class="lb-count" id="lb-count"></div>
+</div>
+
+<script>
+(function(){
+  var links = document.getElementById('nav-links');
+  var btn = document.getElementById('btn-menu');
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.addEventListener('click', function(e){ if(e.target.tagName==='A') links.classList.remove('open'); });
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, {threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  var shots = Array.prototype.slice.call(document.querySelectorAll('.shot[data-full]'));
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lb-img');
+  var lbCount = document.getElementById('lb-count');
+  var cur = 0;
+  function show(i){
+    cur = (i + shots.length) % shots.length;
+    var s = shots[cur];
+    lbImg.src = s.getAttribute('data-full');
+    lbImg.alt = (s.getAttribute('data-caption')||'') + ' enlarged';
+    lbCount.textContent = (cur+1) + ' / ' + shots.length + '  ·  ' + (s.getAttribute('data-caption')||'');
+    lb.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function hide(){ lb.classList.remove('open'); document.body.style.overflow=''; }
+  shots.forEach(function(s){ s.addEventListener('click', function(){ show(shots.indexOf(s)); }); });
+  document.getElementById('lb-close').addEventListener('click', hide);
+  document.getElementById('lb-prev').addEventListener('click', function(e){ e.stopPropagation(); show(cur-1); });
+  document.getElementById('lb-next').addEventListener('click', function(e){ e.stopPropagation(); show(cur+1); });
+  lb.addEventListener('click', function(e){ if(e.target===lb) hide(); });
+  document.addEventListener('keydown', function(e){
+    if(!lb.classList.contains('open')) return;
+    if(e.key==='Escape') hide();
+    if(e.key==='ArrowLeft') show(cur-1);
+    if(e.key==='ArrowRight') show(cur+1);
+  });
+})();
+</script>
+</body>
+</html>

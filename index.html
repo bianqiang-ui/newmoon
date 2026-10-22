@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>月初 NewMoon · 极简 Markdown 编辑器</title>
+<meta name="description" content="月初 NewMoon：大模型时代的 Markdown 编辑器。Agent 过程文档、对话导出、知识库全是 .md——所见即所得、双向链接与知识图谱、mermaid/KaTeX、编码感知读写、多格式导出。代码不开源，个人完全免费。Windows 便携版与安装版。" />
+<link rel="canonical" href="https://newmoon.spark8.xyz/" />
+<link rel="alternate" hreflang="zh-CN" href="https://newmoon.spark8.xyz/" />
+<link rel="alternate" hreflang="en" href="https://newmoon.spark8.xyz/en/" />
+<meta property="og:title" content="月初 NewMoon · 极简 Markdown 编辑器" />
+<meta property="og:description" content="一弯新月，一页新章。大模型时代的 Markdown 工作语言：双链图谱、mermaid/KaTeX、编码感知读写、多格式导出。个人完全免费。" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://newmoon.spark8.xyz/" />
+<meta property="og:image" content="assets/hero-moon.webp" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='24' fill='%231a1a2e'/%3E%3Ccircle cx='64' cy='52' r='28' fill='%23f0e68c'/%3E%3Ccircle cx='76' cy='44' r='22' fill='%231a1a2e'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --ink-0:#12121f; --ink-1:#1a1a2e; --ink-2:#16213e; --ink-3:#0f1626;
+    --moon:#f0e68c; --moon-soft:#f7efad; --moon-dim:#b8ae6a;
+    --paper:#e9edf5; --paper-dim:#aab3c6; --paper-faint:#6b7488;
+    --line:rgba(240,230,140,.14); --line-soft:rgba(233,237,245,.10);
+    --glow:rgba(240,230,140,.16);
+    --radius:16px; --maxw:1120px;
+    --sans:"Inter","Segoe UI",-apple-system,"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    --serif:"Songti SC","STSong","SimSun","Noto Serif SC",Georgia,serif;
+    --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Cascadia Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--ink-0); color:var(--paper);
+    font-family:var(--sans); line-height:1.65; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit; text-decoration:none}
+  img,video{max-width:100%; display:block}
+  code{font-family:var(--mono); font-size:.92em; background:rgba(240,230,140,.09); color:var(--moon-soft); padding:1px 6px; border-radius:6px}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+  .eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.28em; text-transform:uppercase; color:var(--moon-dim)}
+
+  /* ---------- nav ---------- */
+  header.nav{
+    position:fixed; top:0; left:0; right:0; z-index:60;
+    backdrop-filter:blur(14px);
+    background:linear-gradient(180deg,rgba(18,18,31,.88),rgba(18,18,31,.5));
+    border-bottom:1px solid var(--line-soft);
+  }
+  .nav-inner{display:flex; align-items:center; justify-content:space-between; height:64px}
+  .brand{display:flex; align-items:center; gap:12px; font-weight:600; letter-spacing:.02em}
+  .brand svg{width:32px; height:32px; display:block; filter:drop-shadow(0 0 10px var(--glow))}
+  .brand b{font-size:16px}
+  .brand span{color:var(--paper-dim); font-weight:400; font-size:13px; margin-left:2px}
+  nav.links{display:flex; align-items:center; gap:26px; font-size:14.5px; color:var(--paper-dim)}
+  nav.links a:hover{color:var(--paper)}
+  .nav-cta{
+    display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:999px;
+    background:var(--moon); color:var(--ink-1); font-weight:600; font-size:14px;
+    box-shadow:0 6px 22px rgba(240,230,140,.22); transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .nav-cta:hover{transform:translateY(-1px); box-shadow:0 10px 28px rgba(240,230,140,.30)}
+  .menu-btn{display:none; background:none; border:1px solid var(--line); color:var(--paper); border-radius:10px; padding:8px 11px; font-size:16px; cursor:pointer}
+
+  /* ---------- hero：整版月夜海报 ---------- */
+  .hero{
+    position:relative; min-height:100svh; display:flex; align-items:center;
+    padding:112px 0 72px; overflow:hidden;
+  }
+  .hero-bg{position:absolute; inset:0; z-index:-2}
+  .hero-bg img{width:100%; height:100%; object-fit:cover; object-position:center 62%}
+  .hero-bg::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(90deg,rgba(18,18,31,.92) 0%,rgba(18,18,31,.72) 42%,rgba(18,18,31,.18) 78%,transparent 100%),
+               linear-gradient(0deg,var(--ink-0) 0%,transparent 26%);
+  }
+  .hero-inner{width:100%}
+  .hero-copy{max-width:640px}
+  .hero .eyebrow{opacity:0; animation:rise .8s .1s ease forwards}
+  h1.title{
+    font-family:var(--serif); font-weight:600; font-size:clamp(44px,6.4vw,74px); line-height:1.08;
+    margin:18px 0 4px; letter-spacing:.01em;
+    opacity:0; animation:rise .8s .22s ease forwards;
+  }
+  h1.title .accent{color:var(--moon); text-shadow:0 0 34px rgba(240,230,140,.35)}
+  .poem{
+    font-family:var(--serif); font-size:clamp(17px,2.2vw,22px); color:var(--paper-dim);
+    margin:14px 0 0; line-height:1.9;
+    opacity:0; animation:rise .8s .34s ease forwards;
+  }
+  .lead{
+    font-size:16.5px; color:var(--paper-dim); max-width:52ch; margin:18px 0 0;
+    opacity:0; animation:rise .8s .46s ease forwards;
+  }
+  .lead b{color:var(--moon-soft); font-weight:600}
+  .cta-row{display:flex; flex-wrap:wrap; gap:14px; margin-top:34px; opacity:0; animation:rise .8s .58s ease forwards}
+  .btn{
+    display:inline-flex; align-items:center; gap:10px; padding:14px 24px; border-radius:12px;
+    font-weight:600; font-size:15.5px; cursor:pointer; border:1px solid transparent;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .btn-primary{background:var(--moon); color:var(--ink-1); box-shadow:0 10px 30px rgba(240,230,140,.24)}
+  .btn-primary:hover{transform:translateY(-2px); box-shadow:0 16px 38px rgba(240,230,140,.32)}
+  .btn-ghost{background:rgba(233,237,245,.05); color:var(--paper); border-color:var(--line)}
+  .btn-ghost:hover{background:rgba(233,237,245,.09); transform:translateY(-2px)}
+  .btn small{display:block; font-weight:400; font-size:11px; opacity:.72; line-height:1.2}
+  .hero-chips{
+    margin-top:26px; display:flex; gap:8px 20px; flex-wrap:wrap;
+    font-family:var(--mono); font-size:12.5px; color:var(--paper-faint);
+    opacity:0; animation:rise .8s .7s ease forwards;
+  }
+  .hero-chips b{color:var(--moon-dim); font-weight:600}
+  .scroll-cue{
+    position:absolute; left:50%; bottom:26px; transform:translateX(-50%);
+    font-family:var(--mono); font-size:11px; letter-spacing:.3em; color:var(--paper-faint);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    opacity:0; animation:rise .8s .9s ease forwards;
+  }
+  .scroll-cue::after{content:""; width:1px; height:34px; background:linear-gradient(180deg,var(--moon-dim),transparent); animation:cue 1.8s ease-in-out infinite}
+  @keyframes rise{from{opacity:0; transform:translateY(22px)} to{opacity:1; transform:none}}
+  @keyframes cue{0%,100%{transform:scaleY(.4); opacity:.4} 50%{transform:scaleY(1); opacity:1}}
+
+  /* ---------- section shell ---------- */
+  section{padding:96px 0; position:relative}
+  .sec-head{max-width:680px; margin-bottom:48px}
+  .sec-head.center{margin-left:auto; margin-right:auto; text-align:center}
+  h2.sec-title{font-family:var(--serif); font-weight:600; font-size:clamp(28px,3.6vw,40px); margin:12px 0 10px; letter-spacing:.01em}
+  .sec-sub{color:var(--paper-dim); font-size:16px; margin:0}
+  .reveal{opacity:0; transform:translateY(26px); transition:opacity .7s ease, transform .7s ease}
+  .reveal.in{opacity:1; transform:none}
+
+  /* ---------- 首屏之下的产品真容 ---------- */
+  .proof{padding:0 0 96px}
+  .proof-frame{
+    border:1px solid var(--line-soft); border-radius:18px; overflow:hidden;
+    box-shadow:0 50px 110px rgba(0,0,0,.55), 0 0 0 1px rgba(240,230,140,.05) inset;
+    background:var(--ink-1);
+  }
+  .proof-frame img{width:100%}
+  .proof-cap{display:flex; justify-content:space-between; gap:12px; padding:14px 4px 0; font-family:var(--mono); font-size:12px; color:var(--paper-faint)}
+  .proof-cap em{font-style:normal; color:var(--moon-dim)}
+
+  /* ---------- AI 时代板块 ---------- */
+  .ai{background:linear-gradient(180deg,var(--ink-3),var(--ink-0) 88%)}
+  .ai-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center}
+  .ai h2{margin-top:0}
+  .ai-list{list-style:none; padding:0; margin:22px 0 0; font-size:15px; color:var(--paper-dim)}
+  .ai-list li{display:flex; gap:12px; align-items:flex-start; margin:12px 0}
+  .ai-list li svg{flex:0 0 auto; width:18px; height:18px; color:var(--moon); margin-top:3px}
+  .ai-list b{color:var(--paper); font-weight:600}
+  .ai-shot{border:1px solid var(--line-soft); border-radius:18px; overflow:hidden; box-shadow:0 36px 80px rgba(0,0,0,.5)}
+  .ai-shot img{width:100%}
+
+  /* ---------- tour：图文交替 ---------- */
+  .hl{display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; margin:0 0 88px}
+  .hl:last-child{margin-bottom:0}
+  .hl.rev .hl-txt{order:2}
+  .hl h3{font-family:var(--serif); font-size:clamp(22px,2.5vw,28px); margin:10px 0 12px; letter-spacing:.01em}
+  .hl p{color:var(--paper-dim); font-size:15.5px; margin:0 0 16px}
+  .hl ul{list-style:none; padding:0; margin:0; font-size:14.5px; color:var(--paper-dim)}
+  .hl li{display:flex; gap:10px; align-items:flex-start; margin:9px 0}
+  .hl li svg{flex:0 0 auto; width:17px; height:17px; color:var(--moon); margin-top:3px}
+  .hl .kicker{font-family:var(--mono); font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--moon-dim)}
+  .shot{position:relative; border:1px solid var(--line-soft); border-radius:14px; overflow:hidden; background:var(--ink-1);
+    box-shadow:0 28px 64px rgba(0,0,0,.42); cursor:zoom-in; transition:transform .18s ease, border-color .18s ease}
+  .shot:hover{transform:translateY(-4px); border-color:var(--line)}
+  .shot img{width:100%; height:auto}
+  .shot .cap{position:absolute; left:0; right:0; bottom:0; padding:22px 14px 11px; font-family:var(--mono); font-size:11.5px; color:var(--paper-dim);
+    background:linear-gradient(180deg,transparent,rgba(18,18,31,.9)); display:flex; justify-content:space-between; gap:10px}
+  .shot .cap em{font-style:normal; color:var(--moon-dim)}
+
+  /* ---------- 图谱氛围条 ---------- */
+  .band{padding:0; position:relative; height:340px; overflow:hidden; display:grid; place-items:center}
+  .band img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.75}
+  .band::after{content:""; position:absolute; inset:0; background:radial-gradient(60% 90% at 50% 50%,transparent,var(--ink-0) 92%)}
+  .band-txt{position:relative; z-index:1; text-align:center; padding:0 24px}
+  .band-txt h3{font-family:var(--serif); font-size:clamp(24px,3.2vw,36px); margin:0 0 10px; text-shadow:0 2px 24px rgba(0,0,0,.7)}
+  .band-txt p{color:var(--paper-dim); margin:0 auto; max-width:56ch; font-size:15.5px; text-shadow:0 1px 14px rgba(0,0,0,.8)}
+
+  /* ---------- 功能：发丝线栅格（无卡片） ---------- */
+  .feat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:1px solid var(--line-soft)}
+  .feat{padding:30px; border-bottom:1px solid var(--line-soft); position:relative}
+  .feat + .feat{border-left:1px solid var(--line-soft); padding-left:30px}
+  .feat .ico{height:32px; color:var(--moon); margin-bottom:14px; display:block}
+  .feat .ico svg{height:100%; width:auto; display:block}
+  .feat h3{font-size:16.5px; margin:0 0 8px; font-weight:600}
+  .feat p{font-size:14px; color:var(--paper-dim); margin:0}
+
+  /* ---------- 截图画廊 ---------- */
+  .gal{display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+  .gal .shot{border-radius:12px}
+  .gal .shot .cap{font-size:10.5px; padding:18px 10px 8px}
+
+  /* ---------- 能力表 ---------- */
+  .table-wrap{overflow-x:auto; border:1px solid var(--line-soft); border-radius:var(--radius)}
+  table{width:100%; border-collapse:collapse; min-width:680px; font-size:14.5px}
+  th,td{padding:14px 18px; text-align:left; border-bottom:1px solid var(--line-soft)}
+  th{font-family:var(--mono); font-size:12.5px; letter-spacing:.08em; color:var(--moon-dim); text-transform:uppercase; background:rgba(0,0,0,.2)}
+  tr:last-child td{border-bottom:none}
+  td b{color:var(--moon-soft); font-weight:600}
+  td .sub{display:block; color:var(--paper-faint); font-size:12.5px; margin-top:2px}
+
+  /* ---------- 下载 ---------- */
+  .dl-grid{display:grid; grid-template-columns:1fr 1fr; gap:22px; max-width:880px; margin:0 auto}
+  .dl{border:1px solid var(--line-soft); border-radius:var(--radius); padding:30px 28px; background:linear-gradient(180deg,rgba(26,26,46,.6),rgba(22,33,62,.3)); transition:border-color .18s ease, transform .18s ease}
+  .dl:hover{border-color:var(--line); transform:translateY(-3px)}
+  .dl.primary{border-color:rgba(240,230,140,.34)}
+  .dl h3{font-family:var(--serif); font-size:20px; margin:0 0 4px}
+  .dl .tag{font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--moon-dim); text-transform:uppercase}
+  .dl p{color:var(--paper-dim); font-size:14px; margin:10px 0 18px}
+  .dl .btn{width:100%; justify-content:center}
+  .dl-meta{font-family:var(--mono); font-size:12px; color:var(--paper-faint); margin:14px 0 0; line-height:1.8}
+  .dl-note{max-width:880px; margin:22px auto 0; font-size:13.5px; color:var(--paper-faint); line-height:1.9; text-align:center}
+  .dl-note a{color:var(--moon-dim); border-bottom:1px dashed var(--line)}
+  .lic-band{max-width:880px; margin:34px auto 0; padding:18px 24px; border:1px solid var(--line-soft); border-radius:var(--radius);
+    display:flex; flex-wrap:wrap; gap:10px 28px; justify-content:center; font-family:var(--mono); font-size:12.5px; color:var(--paper-dim)}
+  .lic-band b{color:var(--moon-dim); font-weight:600}
+
+  /* ---------- 视频 ---------- */
+  .video-wrap{max-width:820px; margin:0 auto; border:1px solid var(--line-soft); border-radius:var(--radius); overflow:hidden; background:#000;
+    box-shadow:0 40px 90px rgba(0,0,0,.5)}
+  .video-wrap video{width:100%; display:block}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--line-soft); padding:34px 0 46px; color:var(--paper-faint); font-size:13.5px}
+  .foot{display:flex; justify-content:space-between; gap:16px 20px; flex-wrap:wrap; align-items:center}
+  .foot .brand b{font-size:15px}
+  .foot-links{display:flex; flex-wrap:wrap; gap:8px 26px; font-family:var(--mono); font-size:12.5px}
+  .foot-links a:hover{color:var(--moon-dim)}
+  .foot-note{width:100%; margin-top:18px; padding-top:16px; border-top:1px dashed var(--line-soft); font-size:12.5px; line-height:1.9}
+  .foot-note a{color:var(--moon-dim)}
+
+  /* ---------- lightbox ---------- */
+  .lightbox{position:fixed; inset:0; z-index:100; background:rgba(10,10,18,.92); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:4vh 4vw; cursor:zoom-out}
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:100%; max-height:92vh; border-radius:10px; box-shadow:0 30px 90px rgba(0,0,0,.7)}
+  .lb-btn{position:absolute; top:50%; transform:translateY(-50%); width:46px; height:46px; border-radius:50%; border:1px solid var(--line); background:rgba(26,26,46,.7); color:var(--paper); font-size:20px; cursor:pointer; display:grid; place-items:center}
+  .lb-prev{left:18px} .lb-next{right:18px}
+  .lb-close{position:absolute; top:18px; right:18px; width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:rgba(26,26,46,.7); color:var(--paper); font-size:16px; cursor:pointer}
+  .lb-count{position:absolute; bottom:18px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:12px; color:var(--paper-faint)}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:980px){
+    .hero{min-height:auto; padding:130px 0 90px}
+    .ai-grid{grid-template-columns:1fr; gap:34px}
+    .hl{grid-template-columns:1fr; gap:26px; margin-bottom:64px}
+    .hl.rev .hl-txt{order:0}
+    .feat-grid{grid-template-columns:1fr 1fr}
+    .feat + .feat{border-left:none}
+    .feat{border-right:1px solid var(--line-soft); padding-right:24px}
+    .gal{grid-template-columns:repeat(2,1fr)}
+    .dl-grid{grid-template-columns:1fr}
+    .band{height:280px}
+  }
+  @media (max-width:560px){
+    nav.links{display:none}
+    .menu-btn{display:inline-flex}
+    nav.links.open{display:flex; position:absolute; top:64px; left:0; right:0; flex-direction:column; gap:0; padding:8px 0 14px;
+      background:rgba(18,18,31,.97); border-bottom:1px solid var(--line-soft)}
+    nav.links.open a{padding:11px 24px; width:100%}
+    nav.links.open .nav-cta{margin:8px 24px 0; justify-content:center}
+    .feat-grid{grid-template-columns:1fr}
+    .feat{border-right:none; padding-right:0}
+    .foot{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ nav ============ -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="月初 NewMoon 首页">
+      <svg viewBox="0 0 128 128" aria-hidden="true"><rect width="128" height="128" rx="24" fill="#1a1a2e"/><circle cx="64" cy="52" r="28" fill="#f0e68c"/><circle cx="76" cy="44" r="22" fill="#1a1a2e"/><rect x="30" y="92" width="68" height="6" rx="3" fill="#f0e68c" opacity=".55"/><rect x="30" y="104" width="46" height="6" rx="3" fill="#f0e68c" opacity=".3"/></svg>
+      <b>月初<span>NewMoon</span></b>
+    </a>
+    <button class="menu-btn" id="btn-menu" aria-label="打开菜单" aria-expanded="false">☰</button>
+    <nav class="links" id="nav-links">
+      <a href="#tour">功能</a>
+      <a href="#gallery">界面</a>
+      <a href="#compare">能力清单</a>
+      <a href="https://github.com/bianqiang-ui/newmoon" target="_blank" rel="noopener">GitHub</a>
+      <a href="/en/">EN</a>
+      <a class="nav-cta" href="#download">免费下载</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ hero：整版月夜海报 ============ -->
+<div class="hero" id="top">
+  <div class="hero-bg"><img src="assets/hero-moon.webp" alt="墨蓝夜空中一弯金色新月悬于云海远山之上" /></div>
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      <div class="eyebrow">NewMoon · Windows Markdown Editor</div>
+      <h1 class="title">月初<span class="accent">，</span>落笔即新章</h1>
+      <p class="poem">一弯新月，一页新章。<br/>极简 Markdown，落笔即入画。</p>
+      <p class="lead"><b>大模型时代的工作语言是 Markdown。</b>Agent 的过程文档、对话导出、知识库、RAG 语料——月初把它们全部接住：所见即所得、双向链接知识图谱、编码感知读写、多格式导出。</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#download">免费下载 Windows 版<small>便携版 · 安装版 · 个人完全免费</small></a>
+        <a class="btn btn-ghost" href="#tour">先看看它做什么</a>
+      </div>
+      <div class="hero-chips">
+        <span>版本 <b>v1.0.9</b></span>
+        <span>Windows <b>10 / 11 · x64</b></span>
+        <span>代码不开源 · <b>个人免费</b> · 商业需授权</span>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-cue">SCROLL</div>
+</div>
+
+<!-- ============ 产品真容 ============ -->
+<div class="proof">
+  <div class="wrap reveal">
+    <div class="proof-frame"><img src="assets/editor-top-light.webp" alt="月初编辑器主界面：左侧文件树、中间所见即所得正文、右侧双向链接面板" /></div>
+    <div class="proof-cap"><span>主界面 · 浅色主题</span><em>左库右链，中间一张纸</em></div>
+  </div>
+</div>
+
+<!-- ============ AI 时代 ============ -->
+<section class="ai" id="ai">
+  <div class="wrap ai-grid">
+    <div class="reveal">
+      <div class="eyebrow">For the LLM Era</div>
+      <h2 class="sec-title">你和 Agent 的每一天，<br/>都写在 .md 里</h2>
+      <ul class="ai-list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><span><b>过程文档</b>——AGENTS.md、计划、复盘、dev-log，打开即编辑，保存即规范。</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><span><b>对话导出</b>——大模型吐出的 Markdown 报告，所见即所得地校对、批注、再分发。</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><span><b>知识库 / RAG 语料</b>——整个文件夹当一个库管，双向链接把碎片串成网。</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg><span><b>编码不打架</b>——AI 工具链写 UTF-8，老系统存 GBK，月初自动识别、原编码回写，中文永不乱码。</span></li>
+      </ul>
+    </div>
+    <div class="ai-shot reveal"><img src="assets/ai-desk.webp" alt="深夜书桌：笔记本电脑上开着月初编辑器，窗外一弯新月" /></div>
+  </div>
+</section>
+
+<!-- ============ tour ============ -->
+<section id="tour">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Capabilities</div>
+      <h2 class="sec-title">把 Markdown 编辑器，做成一件称手的工具</h2>
+      <p class="sec-sub">从落笔到成稿：写作、组织、计算、呈现、导出——五个环节，逐一打磨。</p>
+    </div>
+
+    <div class="hl reveal">
+      <div class="hl-txt">
+        <div class="kicker">Writing</div>
+        <h3>所写即所见</h3>
+        <p>基于 Tiptap / ProseMirror 的实时渲染：输入 Markdown 语法，字符当场化为格式；随时切回源码模式，纯文本永远是你的底牌。</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>标题、列表、引用、任务清单、表格、代码块、高亮、上下标</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>智能标点与中文排版细节，落笔即符合规范</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>自动保存 + 冲突提醒，断电也不丢稿</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="assets/split-mode.webp" data-caption="双栏模式 · 渲染与源码并排"><img src="assets/split-mode.webp" alt="月初编辑器双栏模式界面" loading="lazy" /><span class="cap"><em>双栏模式</em><span>点图放大</span></span></div>
+    </div>
+
+    <div class="hl rev reveal">
+      <div class="hl-txt">
+        <div class="kicker">Organizing</div>
+        <h3>双向链接与知识图谱</h3>
+        <p>一个文件夹就是一个库。[[双向链接]] 把笔记织成网：反向链接面板、悬停预览、力导向图谱，知识不再是一座座孤岛。</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>库内全文搜索、文件树、最近库会话恢复</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>反向链接与引用未建：写过的每一句都能找回来路</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>图谱视图：节点即笔记，连线即链接</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="assets/graph.webp" data-caption="知识图谱 · 浅色"><img src="assets/graph.webp" alt="月初编辑器知识图谱界面" loading="lazy" /><span class="cap"><em>知识图谱</em><span>点图放大</span></span></div>
+    </div>
+
+    <div class="hl reveal">
+      <div class="hl-txt">
+        <div class="kicker">Computing</div>
+        <h3>图表与公式，原生内置</h3>
+        <p>mermaid 流程图、时序图、甘特图与 KaTeX 数学公式原生渲染，双击即可放大细看；表格内支持管道符直写，数据整理不用出编辑器。</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>mermaid 离线渲染，导出文档同样带图</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>KaTeX 行内 / 块级公式，字体内嵌离线可用</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>脚注、目录、任务清单，长文档的骨架一次搭好</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="assets/mermaid-zoom.webp" data-caption="mermaid 图表放大"><img src="assets/mermaid-zoom.webp" alt="月初编辑器mermaid图表放大界面" loading="lazy" /><span class="cap"><em>图表放大</em><span>点图放大</span></span></div>
+    </div>
+
+    <div class="hl rev reveal">
+      <div class="hl-txt">
+        <div class="kicker">Encoding</div>
+        <h3>编码感知，中文友好</h3>
+        <p>自动识别 UTF-8 / GBK / GB18030 / Big5 / Shift-JIS 等常见编码，按原编码无损回写；换行符、BOM、非法字节全部妥善处理——和老系统、旧文档、AI 工具链混用，中文永不乱码。</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>状态栏实时显示当前文件编码与换行风格</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>一键转码另存，信创环境、行业老档放心打开</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="assets/editor-top-dark.webp" data-caption="深色主题 · 状态栏显示编码"><img src="assets/editor-top-dark.webp" alt="月初编辑器深色主题界面" loading="lazy" /><span class="cap"><em>深色主题</em><span>点图放大</span></span></div>
+    </div>
+
+    <div class="hl reveal">
+      <div class="hl-txt">
+        <div class="kicker">Publishing</div>
+        <h3>一份稿，处处成文</h3>
+        <p>导出 HTML / PDF / 图片 / 打印，所见即所得地分页与排版；粘贴的图片自动落盘到库内，文档搬家不断链；网页剪藏，好文章一键入库。</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>PDF / 打印：表格按行拆分不截断，长文分页干净利落</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>导出 HTML 可离线阅读，公式图表随文档走</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>浏览器剪藏插件（实验），网页正文一键入库存为 .md</li>
+        </ul>
+      </div>
+      <div class="shot" data-full="assets/page-view.webp" data-caption="分页视图 · 打印所见即所得"><img src="assets/page-view.webp" alt="月初编辑器分页视图界面" loading="lazy" /><span class="cap"><em>分页视图</em><span>点图放大</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 图谱氛围条 ============ -->
+<div class="band reveal">
+  <img src="assets/graph-moon.webp" alt="金色与淡蓝节点连成的知识星图" loading="lazy" />
+  <div class="band-txt">
+    <h3>让笔记连成一张网</h3>
+    <p>双向链接、反向面板、悬停预览、知识图谱——月初把散落的 .md 串成你的第二大脑。</p>
+  </div>
+</div>
+
+<!-- ============ 功能栅格 ============ -->
+<section id="features" style="padding-top:72px">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">And then</div>
+      <h2 class="sec-title">细节里见真章</h2>
+    </div>
+    <div class="feat-grid reveal">
+      <div class="feat"><span class="ico"><svg viewBox="4 2 16 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 4v10l-7 4-7-4V7z"/><path d="M12 3v18M5 7l14 10M19 7L5 17"/></svg></span><h3>知识图谱</h3><p>力导向布局，节点即笔记、连线即链接，一眼看清知识版图。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 3 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 4a6 6 0 1 0 0 12 6 6 0 0 0 6-6"/><path d="M10 4v12"/><path d="M16 16l5 5"/></svg></span><h3>库内全文搜索</h3><p>整个文件夹当一个库来搜，命中高亮、上下文预览，秒级定位。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 5 18 15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg></span><h3>智能排版</h3><p>中文标点自动规整、全半角转换，落笔即符合出版级规范。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 3 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 14L4 19M15 9l5-4"/><rect x="9" y="4" width="11" height="11" rx="2"/><rect x="4" y="9" width="11" height="11" rx="2"/></svg></span><h3>双向链接</h3><p>[[链接]] 织网，反向面板与悬停预览，写过的每句话都有来路。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 2 18 18" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12M8 11l4 4 4-4M4 19h16"/></svg></span><h3>自动保存</h3><p>2 秒静默落盘、外部修改冲突提醒、崩溃会话恢复，断电不丢稿。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="2 4 20 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v14"/></svg></span><h3>多标签编辑</h3><p>像浏览器一样开标签，跨标签搜索替换，长稿拆分写作不迷路。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="2 2 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></span><h3>专注与预览</h3><p>大纲侧栏、打字机模式、字数统计，把注意力还给文字本身。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="2 3 20 18" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 18l6-5 4 3 3-2 5 4"/></svg></span><h3>图片工作流</h3><p>粘贴即落盘到库内 assets，相对路径引用，文档搬家不断链。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 2 18 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2M7 17h10M12 17v4"/><rect x="4" y="7" width="16" height="10" rx="2"/></svg></span><h3>打印与 PDF</h3><p>所见即所得分页导出，表格按行拆分不截断，交稿即用。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 6 18 15" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 16l5-9 4 6 3-4 4 7z"/><path d="M4 20h16"/></svg></span><h3>mermaid + KaTeX</h3><p>流程图、时序图、数学公式原生渲染，离线可用，导出随文档走。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="1 4 22 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 14h12"/></svg></span><h3>编码感知</h3><p>GBK / Big5 / Shift-JIS 自动识别、原编码回写，中文永不乱码。</p></div>
+      <div class="feat"><span class="ico"><svg viewBox="3 2 18 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></span><h3>网页剪藏</h3><p>浏览器插件一键把正文存为 Markdown，好文章直接入库（实验）。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 画廊 ============ -->
+<section id="gallery">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Gallery</div>
+      <h2 class="sec-title">月有阴晴，纸有明暗</h2>
+      <p class="sec-sub">浅色如纸，深色如墨，护眼如旧书页——三套主题一键切换，也可跟随系统。点击任意截图可放大细看，方向键翻页。</p>
+    </div>
+    <div class="gal reveal">
+      <div class="shot" data-full="assets/split-mode.webp" data-caption="双栏模式 · 渲染与源码"><img src="assets/split-mode.webp" alt="双栏模式截图" loading="lazy" /><span class="cap"><em>双栏模式</em><span>渲染源码</span></span></div>
+      <div class="shot" data-full="assets/source-mode.webp" data-caption="源码模式"><img src="assets/source-mode.webp" alt="源码模式截图" loading="lazy" /><span class="cap"><em>源码模式</em><span>纯文本底牌</span></span></div>
+      <div class="shot" data-full="assets/graph.webp" data-caption="知识图谱"><img src="assets/graph.webp" alt="知识图谱截图" loading="lazy" /><span class="cap"><em>知识图谱</em><span>节点连线</span></span></div>
+      <div class="shot" data-full="assets/backlinks.webp" data-caption="反向链接"><img src="assets/backlinks.webp" alt="反向链接截图" loading="lazy" /><span class="cap"><em>反向链接</em><span>来路可寻</span></span></div>
+      <div class="shot" data-full="assets/mermaid-zoom.webp" data-caption="mermaid 放大"><img src="assets/mermaid-zoom.webp" alt="mermaid图表放大截图" loading="lazy" /><span class="cap"><em>mermaid</em><span>双击放大</span></span></div>
+      <div class="shot" data-full="assets/editor-formula.webp" data-caption="KaTeX 公式"><img src="assets/editor-formula.webp" alt="公式编辑截图" loading="lazy" /><span class="cap"><em>公式</em><span>KaTeX</span></span></div>
+      <div class="shot" data-full="assets/editor-table.webp" data-caption="表格编辑"><img src="assets/editor-table.webp" alt="表格编辑截图" loading="lazy" /><span class="cap"><em>表格</em><span>管道直写</span></span></div>
+      <div class="shot" data-full="assets/editor-image.webp" data-caption="图片工作流"><img src="assets/editor-image.webp" alt="图片工作流截图" loading="lazy" /><span class="cap"><em>图片</em><span>粘贴落盘</span></span></div>
+      <div class="shot" data-full="assets/page-view.webp" data-caption="分页视图"><img src="assets/page-view.webp" alt="分页视图截图" loading="lazy" /><span class="cap"><em>分页</em><span>打印所见即所得</span></span></div>
+      <div class="shot" data-full="assets/palette.webp" data-caption="命令面板"><img src="assets/palette.webp" alt="命令面板截图" loading="lazy" /><span class="cap"><em>命令面板</em><span>Ctrl+P</span></span></div>
+      <div class="shot" data-full="assets/editor-top-dark.webp" data-caption="主界面 · 深色"><img src="assets/editor-top-dark.webp" alt="深色主界面截图" loading="lazy" /><span class="cap"><em>深色主题</em><span>如墨</span></span></div>
+      <div class="shot" data-full="assets/welcome-dark.webp" data-caption="欢迎页 · 深色"><img src="assets/welcome-dark.webp" alt="欢迎页深色截图" loading="lazy" /><span class="cap"><em>欢迎页</em><span>最近库</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 30 秒视频 ============ -->
+<section style="padding-top:40px">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <div class="eyebrow">In 30 Seconds</div>
+      <h2 class="sec-title">看一遍就会用</h2>
+    </div>
+    <div class="video-wrap reveal">
+      <video src="assets/newmoon-intro.mp4" controls muted loop playsinline preload="metadata"></video>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 能力表 ============ -->
+<section id="compare">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div class="eyebrow">Full List</div>
+      <h2 class="sec-title">能力清单</h2>
+      <p class="sec-sub">v1.0.9 当前版本，开箱即用的全部能力。</p>
+    </div>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th style="width:26%">能力</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><b>所见即所得编辑</b></td><td>输入即渲染，随时切回源码模式；标题 / 列表 / 任务 / 表格 / 代码块 / 高亮 / 上下标</td></tr>
+          <tr><td><b>双向链接</b><span class="sub">[[wikilink]]</span></td><td>链接织网、反向面板、悬停预览、未建链接提示</td></tr>
+          <tr><td><b>知识图谱</b></td><td>力导向布局，节点即笔记、连线即链接</td></tr>
+          <tr><td><b>库管理</b></td><td>整个文件夹当一个库：文件树、全文搜索、最近库、会话恢复</td></tr>
+          <tr><td><b>mermaid 图表</b></td><td>流程图 / 时序图 / 甘特图离线渲染，双击放大</td></tr>
+          <tr><td><b>KaTeX 公式</b></td><td>行内与块级数学公式，字体内嵌离线可用</td></tr>
+          <tr><td><b>表格增强</b></td><td>表格内管道符直写、单元格编辑、复制为 Markdown</td></tr>
+          <tr><td><b>脚注 / 目录</b></td><td>学术长文标配，大纲面板一键跳转</td></tr>
+          <tr><td><b>编码感知读写</b></td><td>UTF-8 / GBK / GB18030 / Big5 / Shift-JIS 自动识别，原编码无损回写</td></tr>
+          <tr><td><b>图片工作流</b></td><td>粘贴自动落盘库内、相对路径引用、双击缩放查看</td></tr>
+          <tr><td><b>导出与打印</b></td><td>HTML / PDF / 图片 / 打印分页，图表公式随文档走</td></tr>
+          <tr><td><b>网页剪藏</b><span class="sub">实验</span></td><td>浏览器插件一键把正文存为 Markdown 入库</td></tr>
+          <tr><td><b>自动保存</b></td><td>2 秒静默落盘、外部修改冲突提醒、崩溃会话恢复</td></tr>
+          <tr><td><b>多标签</b></td><td>像浏览器一样开标签，跨标签搜索替换</td></tr>
+          <tr><td><b>三套主题</b></td><td>亮色 / 暗色 / 护眼，一键切换、跟随系统</td></tr>
+          <tr><td><b>专注写作</b></td><td>打字机模式、字数统计、快捷键面板</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 下载 ============ -->
+<section id="download" style="background:linear-gradient(180deg,var(--ink-0),var(--ink-2))">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <div class="eyebrow">Download</div>
+      <h2 class="sec-title">今晚就开始写</h2>
+      <p class="sec-sub">两个渠道，同一个安装包。GitHub Releases 为主，官网 <code>/dl/</code> 为备份。</p>
+    </div>
+    <div class="dl-grid reveal">
+      <div class="dl primary">
+        <div class="tag">Installer · MSI</div>
+        <h3>安装版</h3>
+        <p>向导式安装：可自定义安装目录，注册 .md 文件关联（可把月初设为 Markdown 默认编辑器），含开始菜单与桌面快捷方式。</p>
+        <a class="btn btn-primary" href="https://github.com/bianqiang-ui/newmoon/releases/latest/download/NewMoon-1.0.9.msi">GitHub 下载 MSI（主渠道）</a>
+        <a class="btn btn-ghost" href="https://newmoon.spark8.xyz/dl/NewMoon-1.0.9.msi" style="margin-top:10px">官网备份下载 MSI</a>
+        <p class="dl-meta">NewMoon-1.0.9.msi · 约 130 MB · Windows 10/11 x64</p>
+      </div>
+      <div class="dl">
+        <div class="tag">Portable · ZIP</div>
+        <h3>免安装版</h3>
+        <p>解压即用，不写注册表、不留痕迹，放 U 盘里带走。与安装版功能完全一致。</p>
+        <a class="btn btn-primary" href="https://github.com/bianqiang-ui/newmoon/releases/latest/download/NewMoon-1.0.9-win.zip">GitHub 下载 ZIP（主渠道）</a>
+        <a class="btn btn-ghost" href="https://newmoon.spark8.xyz/dl/NewMoon-1.0.9-win.zip" style="margin-top:10px">官网备份下载 ZIP</a>
+        <p class="dl-meta">NewMoon-1.0.9-win.zip · 约 160 MB · 解压后运行 NewMoon.exe</p>
+      </div>
+    </div>
+    <p class="dl-note reveal" id="download-note">
+      主渠道 <a href="https://github.com/bianqiang-ui/newmoon/releases" target="_blank" rel="noopener">GitHub Releases</a>，
+      备份 <a href="https://newmoon.spark8.xyz/dl/">官网 /dl/</a>，两处分发互为镜像。
+      软件未做代码签名，首次运行如遇 Windows SmartScreen 拦截，点「仍要运行」即可。
+    </p>
+    <div class="lic-band reveal">
+      <span>许可：<b>代码不开源</b></span>
+      <span><b>个人使用完全免费</b>（无功能限制）</span>
+      <span>商业使用需<b>购买授权</b>（咨询：<a href="mailto:997383@qq.com" style="color:var(--moon-dim)">997383@qq.com</a>）</span>
+      <span>版本 <b>v1.0.9</b> · Windows 10/11 x64</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ footer ============ -->
+<footer>
+  <div class="wrap foot">
+    <div class="brand">
+      <svg viewBox="0 0 128 128" width="30" height="30" aria-hidden="true"><rect width="128" height="128" rx="24" fill="#1a1a2e"/><circle cx="64" cy="52" r="28" fill="#f0e68c"/><circle cx="76" cy="44" r="22" fill="#1a1a2e"/></svg>
+      <b>月初<span style="color:var(--paper-dim); font-weight:400; font-size:13px; margin-left:6px">NewMoon</span></b>
+    </div>
+    <div class="foot-links">
+      <a href="https://newmoon.spark8.xyz/">官网 · newmoon.spark8.xyz</a>
+      <a href="https://github.com/bianqiang-ui/newmoon" target="_blank" rel="noopener">GitHub · bianqiang-ui/newmoon</a>
+      <a href="https://newmoon.spark8.xyz/dl/">下载备份 · /dl/</a>
+    </div>
+    <div class="foot-note">
+      © 2026 月初 NewMoon · 一弯新月，一页新章。<br/>
+      本软件代码不开源；个人使用完全免费，商业使用需购买授权。<br/>
+      联系 / 商业授权咨询：电话 <a href="tel:13898886628">13898886628</a> · 邮箱 <a href="mailto:997383@qq.com">997383@qq.com</a>（边承旭）
+    </div>
+  </div>
+</footer>
+
+<!-- lightbox -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="截图放大预览">
+  <button class="lb-close" id="lb-close" aria-label="关闭">✕</button>
+  <button class="lb-btn lb-prev" id="lb-prev" aria-label="上一张">‹</button>
+  <img id="lb-img" src="" alt="放大的界面截图" />
+  <button class="lb-btn lb-next" id="lb-next" aria-label="下一张">›</button>
+  <div class="lb-count" id="lb-count"></div>
+</div>
+
+<script>
+(function(){
+  var links = document.getElementById('nav-links');
+  var btn = document.getElementById('btn-menu');
+  btn.addEventListener('click', function(){
+    var open = links.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  links.addEventListener('click', function(e){ if(e.target.tagName==='A') links.classList.remove('open'); });
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, {threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  var shots = Array.prototype.slice.call(document.querySelectorAll('.shot[data-full]'));
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lb-img');
+  var lbCount = document.getElementById('lb-count');
+  var cur = 0;
+  function show(i){
+    cur = (i + shots.length) % shots.length;
+    var s = shots[cur];
+    lbImg.src = s.getAttribute('data-full');
+    lbImg.alt = (s.getAttribute('data-caption')||'') + ' 放大图';
+    lbCount.textContent = (cur+1) + ' / ' + shots.length + '  ·  ' + (s.getAttribute('data-caption')||'');
+    lb.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function hide(){ lb.classList.remove('open'); document.body.style.overflow=''; }
+  shots.forEach(function(s){ s.addEventListener('click', function(){ show(shots.indexOf(s)); }); });
+  document.getElementById('lb-close').addEventListener('click', hide);
+  document.getElementById('lb-prev').addEventListener('click', function(e){ e.stopPropagation(); show(cur-1); });
+  document.getElementById('lb-next').addEventListener('click', function(e){ e.stopPropagation(); show(cur+1); });
+  lb.addEventListener('click', function(e){ if(e.target===lb) hide(); });
+  document.addEventListener('keydown', function(e){
+    if(!lb.classList.contains('open')) return;
+    if(e.key==='Escape') hide();
+    if(e.key==='ArrowLeft') show(cur-1);
+    if(e.key==='ArrowRight') show(cur+1);
+  });
+})();
+</script>
+</body>
+</html>
